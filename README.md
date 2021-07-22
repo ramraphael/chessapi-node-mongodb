@@ -22,6 +22,12 @@ Nest.js was chosen as the preferred Node.js framework, since it provides an opin
 
 Nest.js is an abstraction layer on top of Express.js, but if more performance is required, the Express driver can be swapped out for Fastify, [which performs much better than Express in benchmarks](https://www.fastify.io/benchmarks/).
 
+## Code structure
+
+`Services` (logic classes) are separated within the `chess` folder. The `chess` service is where all the database operations occur- the `chess` service calls methods in the `chessLogic` service, which filters by the type of `ChessPiece` and calls methods in the respective Piece's logic class (only `PawnLogicService` for now).
+
+The board in the MongoDB model is structured as a Mixed 2D array, with validators in place to ensure that the data matches what we expect. Unfortunately, Mongoose doesn't let us create strictly typed 2D arrays (that I've found).
+
 ### Fixed positioning of black and white pieces
 
 To make the business logic easier to define, all boards will have Black's pieces starting at row 0, and White's pieces starting at row 7. Client apps that wish to show a rotated board will have to implement that display logic.
