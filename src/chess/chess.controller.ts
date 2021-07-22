@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { boolean } from 'boolean';
 import { ChessService } from './chess.service';
 
@@ -26,17 +26,18 @@ export class ChessController {
 
   @Post('make-move')
   async makeMove(
-    // TODO should this be a JSON post body? Create DTO (what are pipes?)
-    @Query('id') id: string,
-    @Query('current-coordinates') currentCoordinates: string,
-    @Query('new-coordinates') newCoordinates: string,
-    @Query('isCapture') isCapture: string,
+    @Body()
+    makeMoveDTO: {
+      id: string;
+      currentCoordinates: string;
+      newCoordinates: string;
+    },
   ) {
+    const { id, currentCoordinates, newCoordinates } = makeMoveDTO;
     return await this.chessService.makeMove(
       id,
       currentCoordinates,
       newCoordinates,
-      boolean(isCapture),
     );
   }
 }

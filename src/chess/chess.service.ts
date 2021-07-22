@@ -11,6 +11,7 @@ import {
 import { getCoordinatesArrayFromString } from '../utils/getCoordinatesArrayFromString';
 import { isCoordinatesStringValid } from 'src/validators/isCoordinateValid';
 import { getChessGameDataFromDocument } from '../utils/getGameData';
+import { isChessSquareOpposingPiece } from '../utils/isChessSquareOpposingPiece';
 
 @Injectable()
 export class ChessService {
@@ -89,7 +90,6 @@ export class ChessService {
     id: string,
     currentCoordinates: string,
     newCoordinates: string,
-    isCapture: boolean,
   ) {
     if (!isCoordinatesStringValid(currentCoordinates)) {
       throw new InvalidCoordinatesException(currentCoordinates);
@@ -114,6 +114,12 @@ export class ChessService {
         console.error('Error getting game from database: ', error);
         throw new DatabaseException();
       });
+
+    const isCapture = isChessSquareOpposingPiece(
+      retrievedGame,
+      newCoordinatesArray,
+      retrievedGame.currentPlayer,
+    );
 
     if (
       !this.chessLogicService.isMoveValid(
