@@ -15,7 +15,7 @@ export const isChessSquareOpposingPiece = (
   }
 
   return (
-    chessGame.board?.[x]?.[y] !== null &&
-    chessGame.board?.[x]?.[y]?.player !== currentPlayer
+    chessGame.board[x][y] !== null &&
+    chessGame.board[x][y].player !== currentPlayer
   );
 };

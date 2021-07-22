@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ChessGame, ChessGameDocument } from '../schemas/chessGame.schema';
 import { ChessLogicService } from './chessLogic.service';
-import { DatabaseException, InvalidCoordinatesException } from './chess.errors';
+import {
+  DatabaseException,
+  InvalidCoordinatesException,
+  InvalidMoveException,
+} from './chess.errors';
 import { getCoordinatesArrayFromString } from '../utils/getCoordinatesArrayFromString';
 import { isCoordinatesStringValid } from 'src/validators/isCoordinateValid';
 import { getChessGameDataFromDocument } from '../utils/getGameData';
@@ -28,9 +32,7 @@ export class ChessService {
       throw new DatabaseException();
     });
 
-    const { _id, gameState, currentPlayer, board } = savedChessGame;
-
-    return { id: _id, gameState, currentPlayer, board } as ChessGame;
+    return getChessGameDataFromDocument(savedChessGame);
   }
 
   /**
@@ -57,7 +59,7 @@ export class ChessService {
    */
   async getValidMoves(id: string, coordinates: string) {
     if (!isCoordinatesStringValid(coordinates)) {
-      throw new InvalidCoordinatesException();
+      throw new InvalidCoordinatesException(coordinates);
     }
 
     const coordinatesArray = getCoordinatesArrayFromString(coordinates);
@@ -89,11 +91,21 @@ export class ChessService {
     newCoordinates: string,
     isCapture: boolean,
   ) {
+    if (!isCoordinatesStringValid(currentCoordinates)) {
+      throw new InvalidCoordinatesException(currentCoordinates);
+    }
+
     const currentCoordinatesArray =
       getCoordinatesArrayFromString(currentCoordinates);
+
     const [currentX, currentY] = currentCoordinatesArray;
 
+    if (!isCoordinatesStringValid(newCoordinates)) {
+      throw new InvalidCoordinatesException(newCoordinates);
+    }
+
     const newCoordinatesArray = getCoordinatesArrayFromString(newCoordinates);
+
     const [newX, newY] = newCoordinatesArray;
 
     const retrievedGame = await this.chessGameModel
@@ -103,12 +115,16 @@ export class ChessService {
         throw new DatabaseException();
       });
 
-    !this.chessLogicService.validateMove(
-      retrievedGame,
-      currentCoordinatesArray,
-      newCoordinatesArray,
-      isCapture,
-    );
+    if (
+      !this.chessLogicService.isMoveValid(
+        retrievedGame,
+        currentCoordinatesArray,
+        newCoordinatesArray,
+        isCapture,
+      )
+    ) {
+      throw new InvalidMoveException();
+    }
 
     const updatedBoard = [...retrievedGame.board];
 

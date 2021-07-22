@@ -4,9 +4,59 @@ import { CoordinatesArray } from 'src/types/CoordinatesArray';
 import { isChessSquareEmpty } from 'src/utils/isChessSquareEmpty';
 import { isChessSquareOpposingPiece } from 'src/utils/isChessSquareOpposingPiece';
 
+// Note: Pawn promotion not implemented
+// (https://en.wikipedia.org/wiki/Promotion_(chess))
 @Injectable()
 export class PawnLogicService {
   constructor() {}
+
+  public isValidPawnMove(
+    chessGame: ChessGame,
+    currentCoordinates: CoordinatesArray,
+    newCoordinates: CoordinatesArray,
+  ) {
+    const [currentX, currentY] = currentCoordinates;
+    const [newX, newY] = newCoordinates;
+
+    const currentSquare = chessGame.board[currentX][currentY];
+    const newSquare = chessGame.board[newX][newY];
+
+    // NOTES
+    // Black is on top (starting at row 0)
+    // White is on bottom (starting at row 7)
+
+    // If chess piece is black
+    if (currentSquare.player === 'black') {
+      const isFirstMoveForPawn = currentX === 1;
+
+      // If first move
+      if (isFirstMoveForPawn) {
+        // Both two squares and one square forward are okay
+        return (
+          (newX === currentX + 2 || newX === currentX + 1) && newSquare === null
+        );
+      } else {
+        // Only one square forward is okay
+        return newX === currentX + 1 && newSquare === null;
+      }
+    }
+
+    // If chess piece is white
+    if (currentSquare.player === 'white') {
+      const isFirstMoveForPawn = currentX === 6;
+
+      // If first move
+      if (isFirstMoveForPawn) {
+        // Both two squares and one square forward are okay
+        return (
+          (newX === currentX - 2 || newX === currentX - 1) && newSquare === null
+        );
+      } else {
+        // Only one square forward is okay
+        return newX === currentX - 1 && newSquare === null;
+      }
+    }
+  }
 
   public isValidPawnCapture(
     chessGame: ChessGame,
@@ -14,6 +64,7 @@ export class PawnLogicService {
     newCoordinates: CoordinatesArray,
   ): Boolean {
     const { currentPlayer } = chessGame;
+
     const [currentX, currentY] = currentCoordinates;
     const [newX, newY] = newCoordinates;
 
@@ -50,57 +101,6 @@ export class PawnLogicService {
     );
   }
 
-  public isValidPawnMove(
-    chessGame: ChessGame,
-    currentCoordinates: CoordinatesArray,
-    newCoordinates: CoordinatesArray,
-  ) {
-    const [currentX, currentY] = currentCoordinates;
-    const [newX, newY] = newCoordinates;
-
-    const currentSquare = chessGame.board[currentX][currentY];
-    const newSquare = chessGame.board[newX][newY];
-
-    // NOTES
-    // Black is on top (starting at row 0)
-    // White is on bottom (starting at row 7)
-
-    // If chess piece is black
-    if (currentSquare.player === 'black') {
-      const isFirstMoveForPawn = currentX === 1;
-
-      // If first move
-      if (isFirstMoveForPawn) {
-        // If coordinates are correct and piece is not occupied, ok
-        return (
-          (newX === currentX + 2 || newX === currentX + 1) && newSquare === null
-        );
-      } else {
-        // else
-        // If coordinates are correct and piece is not occupied, ok
-        return newX === currentX + 1 && newSquare === null;
-      }
-    }
-
-    // If chess piece is white
-    if (currentSquare.player === 'white') {
-      const isFirstMoveForPawn = currentX === 6;
-
-      // If first move
-      if (isFirstMoveForPawn) {
-        // If coordinates are correct and piece is not occupied, ok
-        return (
-          (newX === currentX - 2 || newX === currentX - 1) && newSquare === null
-        );
-      } else {
-        // If coordinates are correct and piece is not occupied, ok
-        return newX === currentX - 1 && newSquare === null;
-      }
-    }
-  }
-
-  // NOTE This should be a private method, but private methods in Typescript
-  // cannot be (unit) tested
   public getValidPawnMoves(
     chessGame: ChessGame,
     coordinatesArray: CoordinatesArray,
@@ -114,12 +114,10 @@ export class PawnLogicService {
     const squareAtLocation = chessGame.board[x][y] as ChessSquare;
 
     const validMoves: CoordinatesArray[] = [];
-    const validCaptures: CoordinatesArray[] = [];
 
     // Pawns can move one step forward
-    // White:
     if (squareAtLocation.player === 'white') {
-      // white's pawns can move x+2 if first move and square is empty
+      // white's pawns can move x-2 if first move and square is empty
       const isFirstMoveForPiece = x === 6;
 
       if (isFirstMoveForPiece) {
@@ -128,12 +126,45 @@ export class PawnLogicService {
         }
       }
 
-      // white's pawns can move x+1 always, if square is empty
+      // white's pawns can move x-1 always, if square is empty
       if (isChessSquareEmpty(chessGame, [x - 1, y])) {
         validMoves.push([x - 1, y]);
       }
+    } else if (squareAtLocation.player === 'black') {
+      const isFirstMoveForPiece = x === 1;
 
-      // white's pawns can capture black's pieces if they are diagonal
+      // black's pawns can move x+2 if first move and square is empty
+      if (isFirstMoveForPiece) {
+        if (isChessSquareEmpty(chessGame, [x + 2, y])) {
+          validMoves.push([x + 2, y]);
+        }
+      }
+
+      // black's pawns can move x+1 always, if square is empty
+      if (isChessSquareEmpty(chessGame, [x + 1, y])) {
+        validMoves.push([x + 1, y]);
+      }
+    }
+
+    return validMoves;
+  }
+
+  public getValidPawnCaptures(
+    chessGame: ChessGame,
+    coordinatesArray: CoordinatesArray,
+  ) {
+    // NOTES
+    // Black is on top (starting at row 0)
+    // White is on bottom (starting at row 7)
+
+    const [x, y] = coordinatesArray;
+
+    const squareAtLocation = chessGame.board[x][y] as ChessSquare;
+
+    const validCaptures: CoordinatesArray[] = [];
+
+    if (squareAtLocation.player === 'white') {
+      // pawns can capture black's pieces diagonally forwards
       if (
         isChessSquareOpposingPiece(
           chessGame,
@@ -154,20 +185,7 @@ export class PawnLogicService {
         validCaptures.push([x - 1, y + 1]);
       }
     } else if (squareAtLocation.player === 'black') {
-      const isFirstMoveForPiece = x === 1;
-
-      // black's pawns can move x+2 if first move and square is empty
-      if (isFirstMoveForPiece) {
-        if (isChessSquareEmpty(chessGame, [x + 2, y])) {
-          validMoves.push([x + 2, y]);
-        }
-      }
-
-      // black's pawns can move x+1 always, if square is empty
-      if (isChessSquareEmpty(chessGame, [x + 1, y])) {
-        validMoves.push([x + 1, y]);
-      }
-      // black's pawns can capture white's pieces if they are diagonal
+      // pawns can capture white's pieces diagonally forwards
       if (
         isChessSquareOpposingPiece(
           chessGame,
@@ -189,6 +207,6 @@ export class PawnLogicService {
       }
     }
 
-    return { validMoves, validCaptures };
+    return validCaptures;
   }
 }

@@ -16,30 +16,40 @@ export class ChessLogicService {
   public getValidMoves(
     chessGame: ChessGame,
     coordinatesArray: CoordinatesArray,
-  ) {
+  ): { validMoves: CoordinatesArray[]; validCaptures: CoordinatesArray[] } {
     const [x, y] = coordinatesArray;
 
     const currentSquare = chessGame.board[x][y] as ChessSquare;
 
+    // Empty square provided- no moves
     if (currentSquare === null) {
-      return [];
+      return { validMoves: [], validCaptures: [] };
     }
+
     if (currentSquare.player !== chessGame.currentPlayer) {
       throw new OutOfTurnException(currentSquare.player);
     }
 
     // Call correct method depending on piece type
     if (currentSquare.piece === 'P') {
-      return this.pawnLogicService.getValidPawnMoves(
+      const validMoves = this.pawnLogicService.getValidPawnMoves(
         chessGame,
         coordinatesArray,
       );
+
+      const validCaptures = this.pawnLogicService.getValidPawnCaptures(
+        chessGame,
+        coordinatesArray,
+      );
+
+      return { validMoves, validCaptures };
     }
 
+    // TODO Pieces other than pawns have not yet been implemented
     throw new NotImplementedException('Chess piece');
   }
 
-  public validateMove(
+  public isMoveValid(
     chessGame: ChessGame,
     currentCoordinates: CoordinatesArray,
     newCoordinates: CoordinatesArray,
@@ -47,7 +57,13 @@ export class ChessLogicService {
   ): Boolean {
     const [x, y] = currentCoordinates;
 
+    console.log('Current coordinates: ', currentCoordinates);
+
     const currentSquare = chessGame.board[x][y];
+
+    console.log('Current square: ', currentSquare);
+
+    console.log('Current player: ', chessGame.currentPlayer);
 
     if (currentSquare.player !== chessGame.currentPlayer) {
       throw new OutOfTurnException(currentSquare.player);
@@ -73,6 +89,7 @@ export class ChessLogicService {
       );
     }
 
+    // TODO Pieces other than pawns have not yet been implemented
     throw new NotImplementedException('Chess piece');
   }
 }
